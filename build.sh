@@ -15,7 +15,7 @@ rm -rf "$APP_DIR"
 mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 
 # Compile Swift binary
-swiftc -O "$DIR/Sources/main.swift" -o "$MACOS_DIR/$APP_NAME"
+swiftc -target arm64-apple-macosx13.0 -O "$DIR/Sources/main.swift" -o "$MACOS_DIR/$APP_NAME"
 
 # Copy Info.plist
 cp "$DIR/Resources/Info.plist" "$CONTENTS_DIR/Info.plist"
