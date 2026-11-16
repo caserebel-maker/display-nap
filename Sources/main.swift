@@ -12,6 +12,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusHeaderItem: NSMenuItem!
     private var cancelMenuItem: NSMenuItem!
     private var warnCheckboxItem: NSMenuItem!
+    private var launchAtLoginItem: NSMenuItem!
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -101,7 +102,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         menu.addItem(NSMenuItem.separator())
         
-        // Settings / Info
+        // Settings / Options
+        launchAtLoginItem = NSMenuItem(title: "🚀 เปิดอัตโนมัติเมื่อเข้าสู่ระบบ (Launch at Login)", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
+        launchAtLoginItem.target = self
+        launchAtLoginItem.state = isLaunchAtLoginEnabled() ? .on : .off
+        menu.addItem(launchAtLoginItem)
+        
         warnCheckboxItem = NSMenuItem(title: "🔔 แจ้งเตือนล่วงหน้า 10 วินาที", action: #selector(toggleWarning), keyEquivalent: "")
         warnCheckboxItem.target = self
         warnCheckboxItem.state = notifyBefore10Sec ? .on : .off
@@ -222,6 +228,48 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func toggleWarning() {
         notifyBefore10Sec.toggle()
         warnCheckboxItem.state = notifyBefore10Sec ? .on : .off
+    }
+    
+    @objc private func toggleLaunchAtLogin() {
+        let willEnable = (launchAtLoginItem.state != .on)
+        setLaunchAtLogin(enabled: willEnable)
+        launchAtLoginItem.state = willEnable ? .on : .off
+        if willEnable {
+            sendNotification(title: "เปิดอัตโนมัติเมื่อล็อกอิน", message: "DisplayNap จะเริ่มทำงานอัตโนมัติเมื่อเข้าสู่ระบบ")
+        } else {
+            sendNotification(title: "ปิดการเปิดอัตโนมัติ", message: "ยกเลิกการเปิด DisplayNap ตอนล็อกอินแล้ว")
+        }
+    }
+    
+    private func isLaunchAtLoginEnabled() -> Bool {
+        let script = "tell application \"System Events\" to get name of every login item"
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        process.arguments = ["-e", script]
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        try? process.run()
+        process.waitUntilExit()
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        if let str = String(data: data, encoding: .utf8) {
+            return str.contains("DisplayNap")
+        }
+        return false
+    }
+    
+    private func setLaunchAtLogin(enabled: Bool) {
+        let appPath = Bundle.main.bundlePath
+        let script: String
+        if enabled {
+            script = "tell application \"System Events\" to if not (exists (login item \"DisplayNap\")) then make login item at end with properties {path:\"\(appPath)\", hidden:false}"
+        } else {
+            script = "tell application \"System Events\" to if exists (login item \"DisplayNap\") then delete login item \"DisplayNap\""
+        }
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        process.arguments = ["-e", script]
+        try? process.run()
+        process.waitUntilExit()
     }
     
     @objc private func sleepDisplayNow() {

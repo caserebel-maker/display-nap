@@ -7,6 +7,9 @@ echo "🌙 ================================================"
 echo "   กำลังติดตั้ง DisplayNap (macOS Sleep Display Timer)"
 echo "   ================================================"
 
+# Kill old running instance if any
+pkill -x "DisplayNap" 2>/dev/null || true
+
 # 1. Build app
 "$DIR/build.sh"
 
@@ -38,11 +41,16 @@ else
     echo "==> ติดตั้ง CLI สำเร็จ: $HOME/.local/bin/displaynap"
 fi
 
+# 4. Configure Launch at Login (เปิดอัตโนมัติทุกครั้งที่เข้าสู่ระบบ)
+echo "==> กำลังตั้งค่าให้เปิดอัตโนมัติทุกครั้งที่เข้าสู่ระบบ (Launch at Login)..."
+osascript -e "tell application \"System Events\" to if not (exists (login item \"DisplayNap\")) then make login item at end with properties {path:\"$DEST_DIR/DisplayNap.app\", hidden:false}" 2>/dev/null || true
+echo "==> ตั้งค่า Launch at Login สำเร็จ! (ดูได้ที่ System Settings > General > Login Items)"
+
 echo ""
 echo "🎉 ติดตั้งสำเร็จเรียบร้อย!"
 echo "   - แอปจะอยู่ในโฟลเดอร์: $DEST_DIR/DisplayNap.app"
-echo "   - สามารถเปิดใช้งานได้ด้วยคำสั่ง: open '$DEST_DIR/DisplayNap.app'"
-echo "   - หรือคลิกเปิดจาก Spotlight / Applications"
+echo "   - เปิดใช้งานอัตโนมัติทุกครั้งที่เปิดเครื่อง/ล็อกอิน (สามารถเปิด/ปิดได้ในเมนูของแอป)"
+echo "   - สั่งงานด่วนผ่าน Terminal ได้: displaynap 15"
 echo "================================================"
 
 # Launch the app
